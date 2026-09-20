@@ -12,6 +12,8 @@ cd wepush
 This builds and runs the demo in Docker, opens the creator UI, and starts the
 one-hour live workload.
 
+## Overview
+
 WePush is a PostgreSQL-driven creator marketplace where creators discover
 matched campaigns and bid through a React frontend and thin TypeScript API while
 a worker closes auctions safely within budget.

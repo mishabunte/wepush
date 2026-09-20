@@ -1,7 +1,16 @@
 # WePush Creator Marketplace
 
-> **TL;DR:** Run `./demo.sh --reset` to build and run the demo in Docker, open
-> the creator UI, and start the one-hour live workload.
+## TL;DR
+
+```sh
+# Install Git, Docker with Compose support, the PostgreSQL client (psql), and curl.
+git clone https://github.com/mishabunte/wepush.git
+cd wepush
+./demo.sh --reset
+```
+
+This builds and runs the demo in Docker, opens the creator UI, and starts the
+one-hour live workload.
 
 WePush is a PostgreSQL-driven creator marketplace where creators discover
 matched campaigns and bid through a React frontend and thin TypeScript API while

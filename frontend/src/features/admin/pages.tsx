@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -30,11 +30,18 @@ export function AdminArea() {
 function AdminDashboard() {
   const { t, i18n } = useTranslation();
   const live = useLiveEvents();
-  const summary = useApiData(adminApi.summary, [live.revision]);
-  const campaigns = useApiData(adminApi.campaigns, [live.revision]);
+  const summary = useApiData(adminApi.summary, []);
+  const campaigns = useApiData(adminApi.campaigns, []);
   const [processing, setProcessing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [actionError, setActionError] = useState<Error | null>(null);
+  const refreshSummary = summary.refresh;
+  const refreshCampaigns = campaigns.refresh;
+
+  useEffect(() => {
+    if (live.revision === 0) return;
+    void Promise.all([refreshSummary(), refreshCampaigns()]);
+  }, [live.revision, refreshCampaigns, refreshSummary]);
 
   async function processDue() {
     if (!window.confirm(t('admin.processConfirm'))) return;
@@ -44,7 +51,7 @@ function AdminDashboard() {
     try {
       const result = await adminApi.processDue();
       setNotice(t('admin.processed', { count: result.length }));
-      await Promise.all([summary.reload(), campaigns.reload()]);
+      await Promise.all([summary.refresh(), campaigns.refresh()]);
     } catch (reason) {
       setActionError(
         reason instanceof Error ? reason : new Error(t('error.generic'))
@@ -135,7 +142,7 @@ function AdminDashboard() {
               {processing ? t('bidForm.saving') : t('admin.processDue')}
             </button>
           </div>
-          <div className="overflow-hidden rounded-3xl border-2 border-ink bg-white shadow-[5px_5px_0_#171714]">
+          <div className="h-[32rem] overflow-auto rounded-3xl border-2 border-ink bg-white shadow-[5px_5px_0_#171714] lg:h-[38rem]">
             {campaigns.data?.map((campaign) => (
               <CampaignRow key={campaign.id} campaign={campaign} />
             ))}
@@ -149,7 +156,7 @@ function AdminDashboard() {
         </section>
         <section>
           <h2 className="mb-3 text-2xl font-black">{t('admin.activity')}</h2>
-          <div className="max-h-[38rem] overflow-auto rounded-3xl border-2 border-ink bg-ink p-3 text-white">
+          <div className="h-[32rem] overflow-auto rounded-3xl border-2 border-ink bg-ink p-3 text-white lg:h-[38rem]">
             {live.events.length === 0 && (
               <p className="p-4 text-white/60">{t('admin.waitingEvents')}</p>
             )}
@@ -182,8 +189,15 @@ function AdminCampaignPage() {
   const live = useLiveEvents();
   const campaign = useApiData(
     (signal) => adminApi.campaign(campaignId, signal),
-    [campaignId, live.revision]
+    [campaignId]
   );
+  const refreshCampaign = campaign.refresh;
+
+  useEffect(() => {
+    if (live.revision === 0) return;
+    void refreshCampaign();
+  }, [live.revision, refreshCampaign]);
+
   const data = campaign.data;
 
   return (

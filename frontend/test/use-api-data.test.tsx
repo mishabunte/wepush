@@ -4,6 +4,32 @@ import { describe, expect, it, vi } from 'vitest';
 import { useApiData } from '../src/use-api-data';
 
 describe('useApiData', () => {
+  it('keeps existing data visible during a background refresh', async () => {
+    let resolveRefresh: (value: string) => void = () => {};
+    const load = vi
+      .fn<(signal: AbortSignal) => Promise<string>>()
+      .mockResolvedValueOnce('initial')
+      .mockImplementationOnce(
+        () =>
+          new Promise<string>((resolve) => {
+            resolveRefresh = resolve;
+          })
+      );
+    const { result } = renderHook(() => useApiData(load, []));
+
+    await waitFor(() => expect(result.current.data).toBe('initial'));
+    expect(result.current.loading).toBe(false);
+
+    act(() => {
+      void result.current.refresh();
+    });
+    expect(result.current.data).toBe('initial');
+    expect(result.current.loading).toBe(false);
+
+    await act(async () => resolveRefresh('updated'));
+    await waitFor(() => expect(result.current.data).toBe('updated'));
+  });
+
   it('aborts a superseded request and keeps the newest result', async () => {
     const signals: AbortSignal[] = [];
     const resolvers = new Map<number, (value: string) => void>();

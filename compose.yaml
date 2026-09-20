@@ -1,0 +1,83 @@
+services:
+  db:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_DB: wepush
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d wepush"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres-18-data:/var/lib/postgresql
+
+  api:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: "postgresql://wepush_web:${WEB_DB_PASSWORD:-wepush_web}@db:5432/wepush"
+      ADMIN_DATABASE_URL: "postgresql://wepush_admin:${ADMIN_DB_PASSWORD:-wepush_admin}@db:5432/wepush"
+      HOST: 0.0.0.0
+      PORT: 3000
+      TRUST_PROXY: "true"
+      LOG_LEVEL: info
+    ports:
+      - "${API_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/readyz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "${FRONTEND_PORT:-8080}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "-O",
+          "/dev/null",
+          "http://127.0.0.1:8080/nginx-health"
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./backend
+    command: ["node", "dist/worker.js"]
+    environment:
+      WORKER_DATABASE_URL: "postgresql://wepush_worker:${WORKER_DB_PASSWORD:-wepush_worker}@db:5432/wepush"
+      WORKER_INTERVAL_MS: 10000
+      WORKER_BATCH_SIZE: 50
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres-18-data:

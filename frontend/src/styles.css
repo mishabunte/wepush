@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', 'Avenir Next', 'Segoe UI', sans-serif;
+  --color-ink: #171714;
+  --color-paper: #f5f3ed;
+  --color-sun: #f6c945;
+  --color-coral: #ee6b4d;
+  --color-mint: #9ad9c3;
+}
+
+:root {
+  color: var(--color-ink);
+  background: var(--color-paper);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 85% 5%, rgb(246 201 69 / 25%), transparent 28rem),
+    radial-gradient(
+      circle at 5% 60%,
+      rgb(154 217 195 / 22%),
+      transparent 24rem
+    ),
+    var(--color-paper);
+}
+
+button,
+a,
+input {
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--color-sun);
+  color: var(--color-ink);
+}
